@@ -2,20 +2,41 @@ import {
   StyleSheet, Text, View,
   TextInput, TouchableOpacity,
   SafeAreaView,
-  Keyboard
+  Keyboard, Image
 } from 'react-native';
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import api from './src/services/api'
 
 export default function App() {
+  const [cep, setCep] = useState('')
+  const inputRef = useRef(null)
+  const [infoCep, setInfoCep] = useState(null)
 
-  function buscar(){
+  async function buscar() {
+    if (cep == '') {
+      alert('Digite um cep valido')
+      return;
+    }
+
+    try {
+      const response = await api.get(`/${cep}/json`);
+      setInfoCep(response.data);
+    } catch (error) {
+      console.error("Erro na requisição:", error.message);
+    }
+
     Keyboard.dismiss();
   }
 
-  const [cep, setCep] = useState('')
+  function limpar() {
+    setCep('')
+    setInfoCep(null)
+    inputRef.current.focus();
+  }
+
   return (
     <SafeAreaView style={styles.container}>
+      <Image style={{ width: 50, height: 50, marginBottom: 20 }} source={require('./assets/buscador.png')} />
       <View style={{ alignItems: 'center', width: '100%' }}>
         <Text style={styles.textoTitulo}>Digite o CEP desejado:</Text>
         <TextInput
@@ -24,26 +45,29 @@ export default function App() {
           placeholder='Ex: 006652-000'
           value={cep}
           onChangeText={(texto) => setCep(texto)}
+          ref={inputRef}
         />
       </View>
 
       <View style={styles.areaBtn}>
-        <TouchableOpacity onPress={buscar} style={[styles.botao, {backgroundColor: '#1d75cd'}]}>
-          <Text style={{color: '#fff', fontWeight: 'bold', fontSize: 18}}>Buscar</Text>
+        <TouchableOpacity onPress={buscar} style={[styles.botao, { backgroundColor: '#4ba2ea' }]}>
+          <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 18 }}>Buscar</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.botao, {backgroundColor: '#cd3e1d'}]}>
-          <Text style={{color: '#fff', fontWeight: 'bold', fontSize: 18}}>Limpar</Text>
+        <TouchableOpacity onPress={limpar} style={[styles.botao, { backgroundColor: '#ff3b4a' }]}>
+          <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 18 }}>Limpar</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.resultado}>
-        <Text style={styles.itemText}>CEP: 790000</Text>
-        <Text style={styles.itemText}>Logradouro: 790000</Text>
-        <Text style={styles.itemText}>Bairro: 790000</Text>
-        <Text style={styles.itemText}>Cidade: 790000</Text>
-        <Text style={styles.itemText}>Estado: 790000</Text>
-      </View>
 
+      {infoCep &&
+        <View style={styles.resultado}>
+          <Text style={styles.itemText}>CEP: {infoCep.cep}</Text>
+          <Text style={styles.itemText}>Logradouro: {infoCep.logradouro}</Text>
+          <Text style={styles.itemText}>Bairro: {infoCep.bairro}</Text>
+          <Text style={styles.itemText}>Cidade: {infoCep.localidade}</Text>
+          <Text style={styles.itemText}>Estado: {infoCep.uf}</Text>
+        </View>
+      }
     </SafeAreaView>
   );
 }
@@ -82,14 +106,14 @@ const styles = StyleSheet.create({
     padding: 20,
     borderRadius: 4,
   },
-  resultado:{
+  resultado: {
     flex: 1,
     marginTop: 30,
-    width: '70%',
+    width: '100%',
     justifyContent: 'center',
     alignItems: 'center'
   },
-  itemText:{
-    fontSize: 22,
+  itemText: {
+    fontSize: 20,
   }
 });
